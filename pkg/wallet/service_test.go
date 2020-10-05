@@ -200,3 +200,35 @@ func TestService_Repeat_success_user(t *testing.T) {
 		t.Errorf("method Repat returned not nil error, paymentNew => %v", paymentNew)
 	}
 }
+
+func TestService_Favorite_success_user(t *testing.T) {
+	var svc Service
+
+	account, err := svc.RegisterAccount("+992907013487")
+
+	if err != nil {
+		t.Errorf("method RegisterAccount returned not nil error, account => %v", account)
+	}
+
+	err = svc.Deposit(account.ID, 100_00)
+	if err != nil {
+		t.Errorf("method Deposit returned not nil error, error => %v", err)
+	}
+
+	payment, err := svc.Pay(account.ID, 10_00, "auto")
+
+	if err != nil {
+		t.Errorf("method Pay returned not nil error, account => %v", account)
+	}
+
+	favorite, err := svc.FavoritePayment(payment.ID, "Favorite")
+
+	if err != nil {
+		t.Errorf("method FavoritePayment returned not nil error, favorite => %v", favorite)
+	}
+
+	paymentFavorite, err := svc.PayFromFavorite(favorite.ID)
+	if err != nil {
+		t.Errorf("method PayFromFavorite returned not nil error, paymentFavorite => %v", paymentFavorite)
+	}
+}
