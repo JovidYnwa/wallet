@@ -23,7 +23,11 @@ func (e Error) Error() string {
 
 //ErrPhoneRegistred custom error
 var ErrPhoneRegistred = errors.New("phone already registrated")
+
+//ErrAmountMustBePositive custom error amount should be greater then zero
 var ErrAmountMustBePositive = errors.New("amount must be greater then zero")
+
+//ErrAccountNotFound custom error if account was not found
 var ErrAccountNotFound = errors.New("account not found")
 
 //ErrPaymentNotFound for case if payment is not found
@@ -140,4 +144,25 @@ func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
 	}
 	return nil, ErrPaymentNotFound
 
+}
+
+//Reject rejecting a payment
+func (s *Service) Reject(paymentID string) error {
+
+	payment, err := s.FindPaymentByID(paymentID)
+
+	if err != nil {
+		return err
+	}
+
+	account, err := s.FindAccountByID(payment.AccountID)
+
+	if err != nil {
+		return err
+	}
+
+	account.Balance += payment.Amount
+	payment.Status = types.PaymentStatusFail
+
+	return nil
 }
