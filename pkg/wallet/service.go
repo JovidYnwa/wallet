@@ -34,19 +34,19 @@ var ErrAccountNotFound = errors.New("account not found")
 var ErrPaymentNotFound = errors.New("payment not found")
 
 //RegisterAccount Fuction for registration of users
-func RegisterAccount(service *Service, phone types.Phone) {
-	for _, account := range service.accounts {
-		if account.Phone == phone {
-			return
-		}
-	}
-	service.nextAccountID++
-	service.accounts = append(service.accounts, &types.Account{
-		ID:      service.nextAccountID,
-		Phone:   phone,
-		Balance: 0,
-	})
-}
+//func RegisterAccount(service *Service, phone types.Phone) {
+//	for _, account := range service.accounts {
+//		if account.Phone == phone {
+//			return
+//		}
+//	}
+//	service.nextAccountID++
+//	service.accounts = append(service.accounts, &types.Account{
+//		ID:      service.nextAccountID,
+//		Phone:   phone,
+//		Balance: 0,
+//	})
+//}
 
 //RegisterAccount Fuction for registration of users
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
