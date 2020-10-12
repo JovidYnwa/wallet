@@ -1,33 +1,30 @@
 package main
 
 import (
-	"io"
 	"log"
-	"os"
 
-	"github.com/JovidYnwa/wallet/pkg/types"
 	"github.com/JovidYnwa/wallet/pkg/wallet"
 )
 
 func main() {
 
 	//Writing files
-	file1, err := os.Create("../data/message.txt")
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	defer func() {
-		if cerr := file1.Close(); cerr != nil {
-			log.Print(err)
-		}
-	}()
+	/* 	file1, err := os.Create("../data/message.txt")
+	   	if err != nil {
+	   		log.Print(err)
+	   		return
+	   	}
+	   	defer func() {
+	   		if cerr := file1.Close(); cerr != nil {
+	   			log.Print(err)
+	   		}
+	   	}()
 
-	_, err = file1.Write([]byte("Hey you!"))
-	if err != nil {
-		log.Print(err)
-		return
-	}
+	   	_, err = file1.Write([]byte("Hey you!"))
+	   	if err != nil {
+	   		log.Print(err)
+	   		return
+	   	} */
 
 	/* 	Relates to homeworks 15
 	   	svc := &wallet.Service{}
@@ -69,12 +66,12 @@ func main() {
 		   log.Print(wd) */
 
 	//Opening file readme.txt
-	file, err := os.Open("../data/readme.txt")
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	log.Printf("%#v", file)
+	/* 	file, err := os.Open("../data/readme.txt")
+	   	if err != nil {
+	   		log.Print(err)
+	   		return
+	   	}
+	   	log.Printf("%#v", file) */
 
 	/* 	err = file.Close() //First way of closing the file
 	   	if err != nil {
@@ -91,12 +88,12 @@ func main() {
 		}
 	}(file) */
 
-	defer func() {
+	/* 	defer func() {
 		err := file.Close()
 		if err != nil {
 			log.Print(err)
 		}
-	}()
+	}() */
 
 	//Reading way one
 	/* 	buf := make([]byte, 4096)
@@ -107,31 +104,23 @@ func main() {
 	   	}
 	   	data := string(buf[:read])
 	   	log.Print(data) */
-
-	content := make([]byte, 4)
-	buf := make([]byte, 4)
-	for {
-		read, err := file.Read(buf)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Print(err)
-			return
-		}
-		content = append(content, buf[:read]...)
-	}
+	/*
+		content := make([]byte, 4)
+		buf := make([]byte, 4)
+		for {
+			read, err := file.Read(buf)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Print(err)
+				return
+			}
+			content = append(content, buf[:read]...)
+		} */
 	//data := string(content)
 	//log.Print(data)
 
-	type testAccount struct {
-		phone    types.Phone
-		balance  types.Money
-		payments []struct {
-			amount   types.Money
-			category types.PaymentCategory
-		}
-	}
 	svc := &wallet.Service{}
 
 	svc.ExportToFile("data/export.txt")
