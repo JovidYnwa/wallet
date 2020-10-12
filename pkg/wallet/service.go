@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/JovidYnwa/wallet/pkg/types"
 	"github.com/google/uuid"
@@ -263,5 +264,51 @@ func (s *Service) ExportToFile(path string) error {
 		log.Print(err)
 		return ErrFileNotFound
 	}
+	return nil
+}
+
+//ImportFromFile the following
+func (s *Service) ImportFromFile(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	buf := make([]byte, 4096)
+	read, err := file.Read(buf)
+	if err != nil {
+		return err
+	}
+
+	data := string(buf[:read])
+
+	accounts := strings.Split(data, "|")
+
+	for _, account := range accounts {
+		accountConvArr := strings.Split(account, ";")
+
+		importedAccount, err := s.RegisterAccount(types.Phone(accountConvArr[1])) //account phone
+		if err != nil {
+			return err
+		}
+
+		balance, err := strconv.ParseInt(accountConvArr[2], 10, 64) //account balance
+		if err != nil {
+			return err
+		}
+
+		if balance > 0 {
+			err = s.Deposit(importedAccount.ID, types.Money(balance))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = file.Close()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
