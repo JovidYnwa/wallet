@@ -2,6 +2,9 @@ package wallet
 
 import (
 	"errors"
+	"log"
+	"os"
+	"strconv"
 
 	"github.com/JovidYnwa/wallet/pkg/types"
 	"github.com/google/uuid"
@@ -36,6 +39,9 @@ var ErrPaymentNotFound = errors.New("payment not found")
 
 //ErrFavoriteNotFound favorite not found
 var ErrFavoriteNotFound = errors.New("favorite not found")
+
+//ErrFileNotFound for finding writing file
+var ErrFileNotFound = errors.New("There is no such a file")
 
 //RegisterAccount Fuction for registration of users
 //func RegisterAccount(service *Service, phone types.Phone) {
@@ -227,4 +233,35 @@ func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 		return nil, err
 	}
 	return payment, nil
+}
+
+// ExportToFile the following just writes down
+func (s *Service) ExportToFile(path string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		log.Print(err)
+		return ErrFileNotFound
+	}
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			log.Print(cerr)
+		}
+	}()
+	addingPart := ""
+
+	for _, acc := range s.accounts {
+		ID := strconv.Itoa(int(acc.ID)) + ";"
+		phone := string(acc.Phone) + ";"
+		balance := strconv.Itoa(int(acc.Balance))
+
+		addingPart = addingPart + ID + phone + balance + "|"
+
+	}
+
+	_, err = file.Write([]byte(addingPart))
+	if err != nil {
+		log.Print(err)
+		return ErrFileNotFound
+	}
+	return nil
 }
