@@ -135,7 +135,13 @@ func main() {
 	svc := &wallet.Service{}
 
 	svc.ExportToFile("data/export.txt")
-	svc.ImportFromFile("data/import.txt")
+
+	err := svc.ImportFromFile("data/import.txt")
+
+	if err != nil {
+		log.Print(err)
+		return
+	}
 
 }
 
