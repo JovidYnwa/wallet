@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/JovidYnwa/wallet/pkg/wallet"
 )
 
@@ -125,12 +123,7 @@ func main() {
 
 	svc.ExportToFile("data/export.txt")
 
-	err := svc.ImportFromFile("data/import.txt")
-
-	if err != nil {
-		log.Print(err)
-		return
-	}
+	svc.ImportFromFile("data/import.txt")
 
 }
 

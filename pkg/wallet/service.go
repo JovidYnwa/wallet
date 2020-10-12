@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"errors"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -269,46 +270,51 @@ func (s *Service) ExportToFile(path string) error {
 
 //ImportFromFile the following
 func (s *Service) ImportFromFile(path string) error {
+	s.ExportToFile(path)
 	file, err := os.Open(path)
 	if err != nil {
-		return err
+		log.Print(err)
+		return ErrFileNotFound
 	}
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			log.Print(cerr)
+		}
+	}()
 
-	buf := make([]byte, 4096)
-	read, err := file.Read(buf)
-	if err != nil {
-		return err
+	content := make([]byte, 0)
+	buf := make([]byte, 4)
+	for {
+		read, err := file.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Print(err)
+			return ErrFileNotFound
+		}
+		content = append(content, buf[:read]...)
 	}
+	data := string(content)
 
-	data := string(buf[:read])
-
-	accounts := strings.Split(data, "|")
-
+	accounts := strings.Split(string(data), "|")
+	accounts = accounts[:len(accounts)-1]
 	for _, account := range accounts {
-		accountConvArr := strings.Split(account, ";")
-
-		importedAccount, err := s.RegisterAccount(types.Phone(accountConvArr[1])) //account phone
+		vals := strings.Split(account, ";")
+		ID, err := strconv.Atoi(vals[0])
 		if err != nil {
 			return err
 		}
-
-		balance, err := strconv.ParseInt(accountConvArr[2], 10, 64) //account balance
+		balance, err := strconv.Atoi(vals[2])
 		if err != nil {
 			return err
 		}
-
-		if balance > 0 {
-			err = s.Deposit(importedAccount.ID, types.Money(balance))
-			if err != nil {
-				return err
-			}
+		newAccount := &types.Account{
+			ID:      int64(ID),
+			Phone:   types.Phone(vals[1]),
+			Balance: types.Money(balance),
 		}
+		s.accounts = append(s.accounts, newAccount)
 	}
-
-	err = file.Close()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
