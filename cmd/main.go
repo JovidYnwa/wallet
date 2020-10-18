@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"os"
+
+	"github.com/JovidYnwa/wallet/pkg/wallet"
 )
 
 func main() {
@@ -242,8 +244,8 @@ func main() {
 		log.Print(line)
 	}
 	//[]Account{{Phone: "9010001000"}, {Phone: "9020002000"}}
-	//inst1 := wallet.Service{}
-	//fmt.Print(inst1.ExperMy())
+	inst1 := wallet.Service{}
+	fmt.Print(inst1.Import("../data"))
 	//inst2 := wallet.Service{accounts: []*types.Account{{Phone: "9010001000"}}}
 	//inst3 := wallet.Service{Accounts: []*types.Account{{Phone: "9010001000"}, {Phone: "9020002000"}, {Phone: "9030003000"}}}
 	//fmt.Print(inst3.ImportFromFile("../data/accounts.txt"))
