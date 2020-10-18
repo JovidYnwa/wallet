@@ -524,7 +524,7 @@ func (s *Service) Import(dir string) error {
 	favoritesFile := "/favorites.dump"
 	favFile, err := os.Open(dir + favoritesFile)
 	if err != nil {
-		log.Print("There is no %w file", favoritesFile)
+		log.Print("There is no such %w a file", favoritesFile)
 	} else {
 		reader := bufio.NewReader(favFile)
 		for {
