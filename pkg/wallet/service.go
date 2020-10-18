@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"bufio"
 	"errors"
 	"io"
 	"log"
@@ -15,7 +16,7 @@ import (
 //Service The structure of our service
 type Service struct {
 	nextAccountID int64
-	accounts      []*types.Account
+	Accounts      []*types.Account
 	payments      []*types.Payment
 	favorites     []*types.Favorite
 }
@@ -62,7 +63,7 @@ var ErrFileNotFound = errors.New("There is no such a file")
 
 //RegisterAccount Fuction for registration of users
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
-	for _, account := range s.accounts {
+	for _, account := range s.Accounts {
 		if account.Phone == phone {
 			return nil, ErrPhoneRegistred
 		}
@@ -73,7 +74,7 @@ func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 		Phone:   phone,
 		Balance: 0,
 	}
-	s.accounts = append(s.accounts, account)
+	s.Accounts = append(s.Accounts, account)
 
 	return account, nil
 }
@@ -85,7 +86,7 @@ func (s *Service) Deposit(accountID int64, amount types.Money) error {
 	}
 
 	var account *types.Account
-	for _, acc := range s.accounts {
+	for _, acc := range s.Accounts {
 		if acc.ID == accountID {
 			account = acc
 			break
@@ -106,7 +107,7 @@ func (s *Service) Pay(accountID int64, amount types.Money, category types.Paymen
 		return nil, ErrAmountMustBePositive
 	}
 	var account *types.Account
-	for _, acc := range s.accounts {
+	for _, acc := range s.Accounts {
 		if acc.ID == accountID {
 			account = acc
 			break
@@ -134,7 +135,7 @@ func (s *Service) Pay(accountID int64, amount types.Money, category types.Paymen
 func (s *Service) FindAccountByID(accountID int64) (*types.Account, error) {
 	var account *types.Account
 
-	for _, acc := range s.accounts {
+	for _, acc := range s.Accounts {
 		if acc.ID == accountID {
 			account = acc
 			break
@@ -237,6 +238,16 @@ func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	return payment, nil
 }
 
+// FindFavoriteByID desctiption
+func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
+	for _, favorite := range s.favorites {
+		if favoriteID == favorite.ID {
+			return favorite, nil
+		}
+	}
+	return nil, ErrFavoriteNotFound
+}
+
 // ExportToFile the following just writes down
 func (s *Service) ExportToFile(path string) error {
 	file, err := os.Create(path)
@@ -251,7 +262,7 @@ func (s *Service) ExportToFile(path string) error {
 	}()
 	addingPart := ""
 
-	for _, acc := range s.accounts {
+	for _, acc := range s.Accounts {
 		ID := strconv.Itoa(int(acc.ID)) + ";"
 		phone := string(acc.Phone) + ";"
 		balance := strconv.Itoa(int(acc.Balance))
@@ -299,21 +310,268 @@ func (s *Service) ImportFromFile(path string) error {
 	accounts := strings.Split(string(data), "|")
 	accounts = accounts[:len(accounts)-1]
 	for _, account := range accounts {
-		vals := strings.Split(account, ";")
-		ID, err := strconv.Atoi(vals[0])
+		items := strings.Split(account, ";")
+		ID, err := strconv.Atoi(items[0])
 		if err != nil {
 			return err
 		}
-		balance, err := strconv.Atoi(vals[2])
+		balance, err := strconv.Atoi(items[2])
 		if err != nil {
 			return err
 		}
 		newAccount := &types.Account{
 			ID:      int64(ID),
-			Phone:   types.Phone(vals[1]),
+			Phone:   types.Phone(items[1]),
 			Balance: types.Money(balance),
 		}
-		s.accounts = append(s.accounts, newAccount)
+		s.Accounts = append(s.Accounts, newAccount)
 	}
 	return nil
+}
+
+//Export for first home work of lecture 17
+func (s *Service) Export(dir string) error {
+	//Codintion in case if accounts array is not empty
+	if s.Accounts != nil {
+		accountFile := "/accounts.dump"
+		file, err := os.Create(dir + accountFile)
+		for _, account := range s.Accounts {
+			txtitemue := []byte(strconv.FormatInt(int64(account.ID), 10) + string(";") + string(account.Phone) + string(";") + strconv.FormatInt(int64(account.Balance), 10) + string(";") + string('\n'))
+			_, err = file.Write(txtitemue)
+			if err != nil {
+				return err
+			}
+		}
+		log.Print("Accounts data exported")
+	} else {
+		log.Print("Accounts are empy nothing to be exported")
+	}
+	//Codintion in case if paymets array is not empty
+	if s.payments != nil {
+		paymetsFile := "/payments.dump"
+		file, err := os.Create(dir + paymetsFile)
+		for _, payment := range s.payments {
+			txtitemue := []byte(string(payment.ID) + string(";") + strconv.FormatInt(int64(payment.AccountID), 10) + string(";") + strconv.FormatInt(int64(payment.Amount), 10) + string(";") + string(payment.Category) + string(";") + string(payment.Status) + string(";") + string('\n'))
+			_, err = file.Write(txtitemue)
+			if err != nil {
+				return err
+			}
+		}
+		log.Print("Payments data exported")
+	} else {
+		log.Print("Payments are empy nothing to be exported")
+	}
+
+	//Codintion in case if favorites array is not empty
+	if s.favorites != nil {
+		favoriteFile := "/favorites.dump"
+		favFile, err := os.Create(dir + favoriteFile)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+		for _, fav := range s.favorites {
+			text := []byte(fav.ID + ";" + strconv.FormatInt(int64(fav.AccountID), 10) + ";" + fav.Name + ";" + strconv.FormatInt(int64(fav.Amount), 10) + ";" + string(fav.Category) + ";" + string('\n'))
+			_, err := favFile.Write(text)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+		}
+		log.Print("Favorites data exported")
+	} else {
+		log.Print("Favorites are empy nothing to be exported")
+	}
+
+	return nil
+}
+
+// Import for first home work of lecture 17
+func (s *Service) Import(dir string) error {
+	//For accounts
+	accountFile := "/accounts.dump"
+	src, err := os.Open(dir + accountFile)
+	if err != nil {
+		log.Print("There is no %w file", accountFile)
+	} else {
+		defer func() {
+			if cerr := src.Close(); cerr != nil {
+				log.Print(cerr)
+			}
+		}()
+
+		reader := bufio.NewReader(src)
+		for {
+			line, err := reader.ReadString('\n')
+			if err == io.EOF {
+				log.Print(line)
+				break
+			}
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+
+			item := strings.Split(line, ";")
+
+			id, err := strconv.ParseInt(item[0], 10, 64)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+
+			phone := item[1]
+
+			balance, err := strconv.ParseInt(item[2], 10, 64)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+
+			findAccount, _ := s.FindAccountByID(id)
+			if findAccount != nil {
+				findAccount.Phone = types.Phone(phone)
+				findAccount.Balance = types.Money(balance)
+			} else {
+				s.nextAccountID = id
+				newAcc := &types.Account{
+					ID:      s.nextAccountID,
+					Phone:   types.Phone(phone),
+					Balance: types.Money(balance),
+				}
+
+				s.Accounts = append(s.Accounts, newAcc)
+			}
+		}
+		log.Print("Imported")
+
+	}
+
+	// For Payments
+	paymentsFile := "/payments.dump"
+	paySrc, err := os.Open(dir + paymentsFile)
+	if err != nil {
+		log.Print("There is no %w file", paymentsFile)
+	} else {
+		defer func() {
+			if cerr := paySrc.Close(); cerr != nil {
+				log.Print(cerr)
+			}
+		}()
+
+		payReader := bufio.NewReader(paySrc)
+		for {
+			payLine, err := payReader.ReadString('\n')
+			if err == io.EOF {
+				log.Print(payLine)
+				break
+			}
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+
+			item := strings.Split(payLine, ";")
+
+			id := string(item[0])
+			accID, err := strconv.ParseInt(item[1], 10, 64)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+
+			amount, err := strconv.ParseInt(item[2], 10, 64)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+
+			category := item[3]
+
+			status := item[4]
+
+			findPay, _ := s.FindPaymentByID(id)
+			if findPay != nil {
+				findPay.AccountID = accID
+				findPay.Amount = types.Money(amount)
+				findPay.Category = types.PaymentCategory(category)
+				findPay.Status = types.PaymentStatus(status)
+			} else {
+				newPay := &types.Payment{
+					ID:        id,
+					AccountID: accID,
+					Amount:    types.Money(amount),
+					Category:  types.PaymentCategory(category),
+					Status:    types.PaymentStatus(status),
+				}
+
+				s.payments = append(s.payments, newPay)
+			}
+		}
+		log.Print("Imported")
+	}
+
+	//For favorites
+	favoritesFile := "/payments.dump"
+	favFile, err := os.Open(dir + favoritesFile)
+	if err != nil {
+		log.Print("There is no %w file", favoritesFile)
+	} else {
+		reader := bufio.NewReader(favFile)
+		for {
+			favLine, err := reader.ReadString('\n')
+			if err == io.EOF {
+				log.Print(favLine)
+				break
+			}
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+
+			item := strings.Split(favLine, ";")
+
+			id := item[0]
+			accID, err := strconv.ParseInt(item[1], 10, 64)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+			name := item[2]
+			amount, err := strconv.ParseInt(item[3], 10, 64)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+			category := item[4]
+
+			findFav, _ := s.FindFavoriteByID(id)
+			if findFav != nil {
+				findFav.AccountID = accID
+				findFav.Amount = types.Money(amount)
+				findFav.Name = name
+				findFav.Category = types.PaymentCategory(category)
+			} else {
+				newFav := &types.Favorite{
+					ID:        id,
+					AccountID: accID,
+					Name:      name,
+					Amount:    types.Money(amount),
+					Category:  types.PaymentCategory(category),
+				}
+				s.favorites = append(s.favorites, newFav)
+			}
+		}
+		log.Print("Imported")
+	}
+
+	return nil
+}
+
+//ExperMy exp
+func (s *Service) ExperMy() types.Phone {
+	inst1 := Service{Accounts: []*types.Account{{Phone: "9010001000"}}}
+	return inst1.Accounts[0].Phone
+
 }
