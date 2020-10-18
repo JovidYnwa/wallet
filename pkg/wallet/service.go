@@ -16,6 +16,14 @@ import (
 //Service The structure of our service
 type Service struct {
 	nextAccountID int64
+	accounts      []*types.Account
+	payments      []*types.Payment
+	favorites     []*types.Favorite
+}
+
+//Service1 The structure of our service
+type Service1 struct {
+	nextAccountID int64
 	Accounts      []*types.Account
 	payments      []*types.Payment
 	favorites     []*types.Favorite
@@ -63,7 +71,7 @@ var ErrFileNotFound = errors.New("There is no such a file")
 
 //RegisterAccount Fuction for registration of users
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
-	for _, account := range s.Accounts {
+	for _, account := range s.accounts {
 		if account.Phone == phone {
 			return nil, ErrPhoneRegistred
 		}
@@ -74,7 +82,7 @@ func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 		Phone:   phone,
 		Balance: 0,
 	}
-	s.Accounts = append(s.Accounts, account)
+	s.accounts = append(s.accounts, account)
 
 	return account, nil
 }
@@ -86,7 +94,7 @@ func (s *Service) Deposit(accountID int64, amount types.Money) error {
 	}
 
 	var account *types.Account
-	for _, acc := range s.Accounts {
+	for _, acc := range s.accounts {
 		if acc.ID == accountID {
 			account = acc
 			break
@@ -107,7 +115,7 @@ func (s *Service) Pay(accountID int64, amount types.Money, category types.Paymen
 		return nil, ErrAmountMustBePositive
 	}
 	var account *types.Account
-	for _, acc := range s.Accounts {
+	for _, acc := range s.accounts {
 		if acc.ID == accountID {
 			account = acc
 			break
@@ -135,7 +143,7 @@ func (s *Service) Pay(accountID int64, amount types.Money, category types.Paymen
 func (s *Service) FindAccountByID(accountID int64) (*types.Account, error) {
 	var account *types.Account
 
-	for _, acc := range s.Accounts {
+	for _, acc := range s.accounts {
 		if acc.ID == accountID {
 			account = acc
 			break
@@ -262,7 +270,7 @@ func (s *Service) ExportToFile(path string) error {
 	}()
 	addingPart := ""
 
-	for _, acc := range s.Accounts {
+	for _, acc := range s.accounts {
 		ID := strconv.Itoa(int(acc.ID)) + ";"
 		phone := string(acc.Phone) + ";"
 		balance := strconv.Itoa(int(acc.Balance))
@@ -324,7 +332,7 @@ func (s *Service) ImportFromFile(path string) error {
 			Phone:   types.Phone(items[1]),
 			Balance: types.Money(balance),
 		}
-		s.Accounts = append(s.Accounts, newAccount)
+		s.accounts = append(s.accounts, newAccount)
 	}
 	return nil
 }
@@ -332,10 +340,10 @@ func (s *Service) ImportFromFile(path string) error {
 //Export for first home work of lecture 17
 func (s *Service) Export(dir string) error {
 	//Codintion in case if accounts array is not empty
-	if s.Accounts != nil {
+	if s.accounts != nil {
 		accountFile := "/accounts.dump"
 		file, err := os.Create(dir + accountFile)
-		for _, account := range s.Accounts {
+		for _, account := range s.accounts {
 			txtitemue := []byte(strconv.FormatInt(int64(account.ID), 10) + string(";") + string(account.Phone) + string(";") + strconv.FormatInt(int64(account.Balance), 10) + string(";") + string('\n'))
 			_, err = file.Write(txtitemue)
 			if err != nil {
@@ -441,7 +449,7 @@ func (s *Service) Import(dir string) error {
 					Balance: types.Money(balance),
 				}
 
-				s.Accounts = append(s.Accounts, newAcc)
+				s.accounts = append(s.accounts, newAcc)
 			}
 		}
 		log.Print("Imported")
@@ -570,8 +578,8 @@ func (s *Service) Import(dir string) error {
 }
 
 //ExperMy exp
-func (s *Service) ExperMy() types.Phone {
-	inst1 := Service{Accounts: []*types.Account{{Phone: "9010001000"}}}
+func (s *Service1) ExperMy() types.Phone {
+	inst1 := Service1{Accounts: []*types.Account{{Phone: "9010001000"}}}
 	return inst1.Accounts[0].Phone
 
 }
