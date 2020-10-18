@@ -380,7 +380,7 @@ func (s *Service) Export(dir string) error {
 		}
 
 		for _, fav := range s.favorites {
-			text := []byte(fav.ID + ";" + strconv.FormatInt(int64(fav.AccountID), 10) + ";" + fav.Name + ";" + strconv.FormatInt(int64(fav.Amount), 10) + ";" + string(fav.Category) + ";" + string('\n'))
+			text := []byte(fav.ID + ";" + strconv.FormatInt(int64(fav.AccountID), 10) + ";" + fav.Name + ";" + strconv.FormatInt(int64(fav.Amount), 10) + ";" + string(fav.Category) + string('\n'))
 			_, err := favFile.Write(text)
 			if err != nil {
 				log.Print(err)
