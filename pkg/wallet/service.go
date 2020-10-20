@@ -3,11 +3,13 @@ package wallet
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/JovidYnwa/wallet/pkg/types"
 	"github.com/google/uuid"
@@ -53,6 +55,9 @@ var ErrFavoriteNotFound = errors.New("favorite not found")
 
 //ErrFileNotFound for finding writing file
 var ErrFileNotFound = errors.New("There is no such a file")
+
+// ErrNotPayments ...
+var ErrNotPayments = errors.New("No payments to export")
 
 //RegisterAccount Fuction for registration of users
 //func RegisterAccount(service *Service, phone types.Phone) {
@@ -582,4 +587,142 @@ func (s *Service1) ExperMy() types.Phone {
 	inst1 := Service1{Accounts: []*types.Account{{Phone: "9010001000"}}}
 	return inst1.Accounts[0].Phone
 
+}
+
+//Regular sums' not concurrently
+func Regular() int64 {
+	sum := int64(0)
+	for i := 0; i < 2000; i++ {
+		sum++
+	}
+	return sum
+}
+
+//Concurrently sums' concurrently
+func Concurrently() int64 {
+	wg := sync.WaitGroup{}
+	wg.Add(2) //сколько го рутин ждем
+
+	sum := int64(0)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			sum++
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			sum++
+		}
+	}()
+	wg.Wait()
+	return sum
+}
+
+// ExportAccountHistory вытаскивает все платежи конкретного аккаунта
+func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error) {
+	_, err := s.FindAccountByID(accountID)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+
+	payment := []types.Payment{}
+	for _, pay := range s.payments {
+		if pay.AccountID == accountID {
+			payment = append(payment, types.Payment{
+				ID:        pay.ID,
+				AccountID: pay.AccountID,
+				Amount:    pay.Amount,
+				Category:  pay.Category,
+				Status:    pay.Status})
+		}
+	}
+	//a := len(payment)
+	//log.Print(a)
+	//log.Print(payment)
+	if len(payment) == 0 {
+		return nil, ErrNotPayments //fmt.Errorf("%v",ErrNotPayments)
+	}
+
+	return payment, nil
+
+}
+
+func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records int) error {
+
+	if len(payments) > 0 {
+		if len(payments) <= records {
+			file, _ := os.OpenFile(dir+"/payments.dump", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+			defer file.Close()
+
+			var str string
+			for _, v := range payments {
+				str += fmt.Sprint(v.ID) + ";" + fmt.Sprint(v.AccountID) + ";" + fmt.Sprint(v.Amount) + ";" + fmt.Sprint(v.Category) + ";" + fmt.Sprint(v.Status) + "\n"
+			}
+			file.WriteString(str)
+		} else {
+
+			var str string
+			k := 0
+			t := 1
+			var file *os.File
+			for _, v := range payments {
+				if k == 0 {
+					file, _ = os.OpenFile(dir+"/payments"+fmt.Sprint(t)+".dump", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+				}
+				k++
+				str = fmt.Sprint(v.ID) + ";" + fmt.Sprint(v.AccountID) + ";" + fmt.Sprint(v.Amount) + ";" + fmt.Sprint(v.Category) + ";" + fmt.Sprint(v.Status) + "\n"
+				_, err := file.WriteString(str)
+
+				if err != nil {
+					return err
+				}
+				if k == records {
+					str = ""
+					t++
+					k = 0
+					file.Close()
+				}
+			}
+
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) SumPayments(goroutines int) types.Money {
+	if len(s.payments) == 1 {
+		return s.payments[0].Amount
+	}
+
+	slicesPerGorutines := (len(s.payments) / goroutines) + 1
+
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+	sum := types.Money(0)
+
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		valSum := types.Money(0)
+
+		go func(val int) {
+			defer wg.Done()
+			begin := val * slicesPerGorutines
+			end := (val * slicesPerGorutines) + slicesPerGorutines
+			for j := begin; j < end; j++ {
+				if j > len(s.payments)-1 {
+					break
+				}
+				valSum += s.payments[j].Amount
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			sum += valSum
+		}(i)
+	}
+	wg.Wait()
+	return sum
 }

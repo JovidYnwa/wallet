@@ -232,3 +232,103 @@ func TestService_Favorite_success_user(t *testing.T) {
 		t.Errorf("method PayFromFavorite returned not nil error, paymentFavorite => %v", paymentFavorite)
 	}
 }
+
+func BenchmarkReqular(b *testing.B) {
+	want := int64(2000)
+	for i := 0; i < b.N; i++ {
+		result := Regular()
+		b.StopTimer()
+		if result != want {
+			b.Fatalf("Invalid result, got %v, want %v", result, want)
+		}
+		b.StartTimer()
+	}
+}
+
+func BenchmarkConcurrently(b *testing.B) {
+	want := int64(2000)
+	for i := 0; i < b.N; i++ {
+		result := Concurrently()
+		b.StopTimer()
+		if result != want {
+			b.Fatalf("Invalid result, got %v, want %v", result, want)
+		}
+		b.StartTimer()
+	}
+}
+func TestService_SumPayments_success(t *testing.T) {
+	want := types.Money(10_00)
+
+	var svc Service
+
+	account, err := svc.RegisterAccount("+992907013487")
+
+	if err != nil {
+		t.Errorf("method RegisterAccount returned not nil error, account => %v", account)
+	}
+
+	err = svc.Deposit(account.ID, 100_00)
+	if err != nil {
+		t.Errorf("method Deposit returned not nil error, error => %v", err)
+	}
+
+	_, err = svc.Pay(account.ID, 10_00, "auto")
+
+	if err != nil {
+		t.Errorf("method Pay returned not nil error, account => %v", account)
+	}
+
+	got := svc.SumPayments(1)
+
+	if want != got {
+		t.Errorf("SumPayments(): want: %v got: %v", want, got)
+		return
+	}
+}
+
+func BenchmarkSumPayments(b *testing.B) {
+	want := types.Money(10_00)
+
+	var svc Service
+
+	account, _ := svc.RegisterAccount("+992907013487")
+	svc.Deposit(account.ID, 100_00)
+	svc.Pay(account.ID, 10_00, "auto")
+
+	for i := 0; i < b.N; i++ {
+		result := svc.SumPayments(1)
+		if result != want {
+			b.Fatalf("invalid result, got %v, want %v", result, want)
+		}
+	}
+}
+
+func TestService_Export_success(t *testing.T) {
+	var svc Service
+
+	account, _ := svc.RegisterAccount("+992907013487")
+	svc.Deposit(account.ID, 100_00)
+	svc.Pay(account.ID, 10_00, "auto")
+
+	err := svc.Export("../../data")
+
+	if err != nil {
+		t.Errorf("Export(): error=%v", err)
+		return
+	}
+}
+
+func TestService_Import_success(t *testing.T) {
+	var svc Service
+
+	account, _ := svc.RegisterAccount("+992907013487")
+	svc.Deposit(account.ID, 100_00)
+	svc.Pay(account.ID, 10_00, "auto")
+
+	err := svc.Import("../../data")
+
+	if err != nil {
+		t.Errorf("Import(): error=%v", err)
+		return
+	}
+}
