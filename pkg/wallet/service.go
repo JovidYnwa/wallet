@@ -582,44 +582,6 @@ func (s *Service) Import(dir string) error {
 	return nil
 }
 
-//ExperMy exp
-func (s *Service1) ExperMy() types.Phone {
-	inst1 := Service1{Accounts: []*types.Account{{Phone: "9010001000"}}}
-	return inst1.Accounts[0].Phone
-
-}
-
-//Regular sums' not concurrently
-func Regular() int64 {
-	sum := int64(0)
-	for i := 0; i < 2000; i++ {
-		sum++
-	}
-	return sum
-}
-
-//Concurrently sums' concurrently
-func Concurrently() int64 {
-	wg := sync.WaitGroup{}
-	wg.Add(2) //сколько го рутин ждем
-
-	sum := int64(0)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 1000; i++ {
-			sum++
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 1000; i++ {
-			sum++
-		}
-	}()
-	wg.Wait()
-	return sum
-}
-
 // ExportAccountHistory вытаскивает все платежи конкретного аккаунта
 func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error) {
 	_, err := s.FindAccountByID(accountID)

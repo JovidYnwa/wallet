@@ -233,29 +233,6 @@ func TestService_Favorite_success_user(t *testing.T) {
 	}
 }
 
-func BenchmarkReqular(b *testing.B) {
-	want := int64(2000)
-	for i := 0; i < b.N; i++ {
-		result := Regular()
-		b.StopTimer()
-		if result != want {
-			b.Fatalf("Invalid result, got %v, want %v", result, want)
-		}
-		b.StartTimer()
-	}
-}
-
-func BenchmarkConcurrently(b *testing.B) {
-	want := int64(2000)
-	for i := 0; i < b.N; i++ {
-		result := Concurrently()
-		b.StopTimer()
-		if result != want {
-			b.Fatalf("Invalid result, got %v, want %v", result, want)
-		}
-		b.StartTimer()
-	}
-}
 func TestService_SumPayments_success(t *testing.T) {
 	want := types.Money(10_00)
 
@@ -329,6 +306,36 @@ func TestService_Import_success(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Import(): error=%v", err)
+		return
+	}
+}
+
+func TestService_ExportToFile_success(t *testing.T) {
+	var svc Service
+
+	account, _ := svc.RegisterAccount("+992907013487")
+	svc.Deposit(account.ID, 100_00)
+	svc.Pay(account.ID, 10_00, "auto")
+
+	err := svc.ExportToFile("data")
+
+	if err != nil {
+		t.Error("error")
+		return
+	}
+}
+
+func TestService_ImportFromFile_success(t *testing.T) {
+	var svc Service
+
+	account, _ := svc.RegisterAccount("+992907013487")
+	svc.Deposit(account.ID, 100_00)
+	svc.Pay(account.ID, 10_00, "auto")
+
+	err := svc.ImportFromFile("data")
+
+	if err != nil {
+		t.Error("error")
 		return
 	}
 }
